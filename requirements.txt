@@ -1,0 +1,6 @@
+Flask
+Flask-Mail
+mysql-connector
+opencv-python
+pytesseract
+Pillow

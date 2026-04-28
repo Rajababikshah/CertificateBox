@@ -7,3 +7,4 @@ cryptography
 pandas
 matplotlib
 opencv-python-headless
+imagehash

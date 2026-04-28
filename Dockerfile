@@ -11,12 +11,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 5000
-
 # Set environment variables for Flask
 ENV FLASK_APP=main.py
 ENV FLASK_RUN_HOST=0.0.0.0
 
-# Start the app with Gunicorn
-CMD ["gunicorn", "main:app", "--bind", "0.0.0.0:5000"]
+# Start the app with Gunicorn using Railway's PORT
+CMD gunicorn main:app --bind 0.0.0.0:${PORT:-5000}

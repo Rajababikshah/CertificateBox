@@ -10,3 +10,4 @@ opencv-python-headless
 imagehash
 scikit-image
 pycryptodome
+gunicorn

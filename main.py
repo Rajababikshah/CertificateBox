@@ -45,16 +45,12 @@ import mysql.connector
 from Crypto import Random
 from Crypto.Cipher import AES
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 mydb = mysql.connector.connect(
-  host=os.getenv('DB_HOST', 'mysql.railway.internal'),
-  user=os.getenv('DB_USER', 'root'),
-  passwd=os.getenv('DB_PASSWORD', ''),
+  host="localhost",
+  user="root",
+  passwd="",
   charset="utf8",
-  database=os.getenv('DB_NAME', 'railway')
+  database="certificate_locker_new"
 )
 
 
@@ -1667,7 +1663,6 @@ def share():
     if 'username' in session:
         uname = session['username']
     data3=[]
-
     mycursor = mydb.cursor()
     mycursor.execute("SELECT * FROM nt_register where uname=%s",(uname, ))
     value = mycursor.fetchone()
@@ -1728,7 +1723,6 @@ def add_proof():
             maxid=1
             
         
-
         
         if 'file' not in request.files:
             flash('No file part')

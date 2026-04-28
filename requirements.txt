@@ -8,3 +8,4 @@ pandas
 matplotlib
 opencv-python-headless
 imagehash
+scikit-image

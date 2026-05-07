@@ -34,24 +34,95 @@ from werkzeug.utils import secure_filename
 from flask import send_file
 import numpy as np
 import threading
-import time
-import shutil
 import hashlib
-import urllib.request
-import urllib.parse
-from urllib.request import urlopen
-import webbrowser
-import mysql.connector
+import shutil
+from time import time
+
+import requests
 from Crypto import Random
 from Crypto.Cipher import AES
+from dotenv import load_dotenv
+from urllib.parse import urlparse, unquote
 
-mydb = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  passwd="",
-  charset="utf8",
-  database="certificate_locker_new"
-)
+import mysql.connector
+
+load_dotenv()
+
+
+def _build_mysql_config() -> dict:
+    database_url = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL")
+    if database_url:
+        parsed = urlparse(database_url)
+        if parsed.scheme not in {"mysql", "mysql+pymysql", "mysql+mysqlconnector"}:
+            raise RuntimeError(
+                f"Unsupported DATABASE_URL scheme: {parsed.scheme}. Expected mysql://..."
+            )
+
+        return {
+            "host": parsed.hostname,
+            "port": int(parsed.port or 3306),
+            "user": unquote(parsed.username or ""),
+            "password": unquote(parsed.password or ""),
+            "database": (parsed.path or "").lstrip("/") or None,
+            "charset": "utf8",
+            "use_unicode": True,
+            "connection_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "5")),
+        }
+
+    host = os.getenv("MYSQLHOST") or os.getenv("DB_HOST") or "localhost"
+    user = os.getenv("MYSQLUSER") or os.getenv("DB_USER") or "root"
+    password = os.getenv("MYSQLPASSWORD") or os.getenv("DB_PASSWORD") or ""
+    port = int(os.getenv("MYSQLPORT") or os.getenv("DB_PORT") or 3306)
+    database = (
+        os.getenv("MYSQLDATABASE")
+        or os.getenv("MYSQL_DATABASE")
+        or os.getenv("DB_NAME")
+        or os.getenv("DB_DATABASE")
+    )
+
+    return {
+        "host": host,
+        "user": user,
+        "password": password,
+        "port": port,
+        "database": database,
+        "charset": "utf8",
+        "use_unicode": True,
+        "connection_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "5")),
+    }
+
+
+class _LazyMySQL:
+    def __init__(self):
+        self._conn = None
+        self._lock = threading.Lock()
+
+    def _ensure_connected(self):
+        if self._conn is not None and getattr(self._conn, "is_connected", lambda: True)():
+            return
+
+        with self._lock:
+            if self._conn is not None and getattr(self._conn, "is_connected", lambda: True)():
+                return
+
+            config = _build_mysql_config()
+            if not config.get("host"):
+                raise RuntimeError(
+                    "MySQL host not configured. Set DATABASE_URL or MYSQLHOST/DB_HOST."
+                )
+            if not config.get("database"):
+                raise RuntimeError(
+                    "MySQL database name not configured. Set DATABASE_URL or MYSQLDATABASE/DB_NAME."
+                )
+
+            self._conn = mysql.connector.connect(**config)
+
+    def __getattr__(self, item):
+        self._ensure_connected()
+        return getattr(self._conn, item)
+
+
+mydb = _LazyMySQL()
 
 
 app = Flask(__name__)

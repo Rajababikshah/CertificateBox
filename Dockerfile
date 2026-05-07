@@ -15,5 +15,5 @@ COPY . .
 ENV FLASK_APP=main.py
 ENV FLASK_RUN_HOST=0.0.0.0
 
-# Start the app with Gunicorn using Railway's PORT
-CMD gunicorn main:app --bind 0.0.0.0:${PORT:-5000}
+# Start the app with Gunicorn (Railway sets PORT)
+CMD ["sh", "-c", "gunicorn main:app --bind 0.0.0.0:${PORT:-5000}"]

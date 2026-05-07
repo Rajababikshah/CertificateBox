@@ -11,3 +11,4 @@ imagehash
 scikit-image
 pycryptodome
 gunicorn
+python-dotenv

@@ -49,13 +49,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-mydb = mysql.connector.connect(
-  host=os.getenv('DB_HOST', 'mysql.railway.internal'),
-  user=os.getenv('DB_USER', 'root'),
-  passwd=os.getenv('DB_PASSWORD', ''),
-  charset="utf8",
-  database=os.getenv('DB_NAME', 'railway')
-)
+def get_db_connection():
+    return mysql.connector.connect(
+        host=os.getenv('DB_HOST', 'mysql.railway.internal'),
+        user=os.getenv('DB_USER', 'root'),
+        passwd=os.getenv('DB_PASSWORD', ''),
+        charset="utf8",
+        database=os.getenv('DB_NAME', 'railway')
+    )
 
 
 app = Flask(__name__)
@@ -114,7 +115,8 @@ def index():
     if request.method == 'POST':
         username1 = request.form['uname']
         password1 = request.form['pass']
-        mycursor = mydb.cursor()
+        conn = get_db_connection()
+        mycursor = conn.cursor()
         mycursor.execute("SELECT count(*) FROM nt_register where uname=%s && pass=%s",(username1,password1))
         myresult = mycursor.fetchone()[0]
         if myresult>0:
@@ -137,7 +139,8 @@ def login():
         
         username1 = request.form['uname']
         password1 = request.form['pass']
-        mycursor = mydb.cursor()
+        conn = get_db_connection()
+        mycursor = conn.cursor()
         mycursor.execute("SELECT count(*) FROM nt_login where username=%s && password=%s",(username1,password1))
         myresult = mycursor.fetchone()[0]
         if myresult>0:
@@ -160,7 +163,8 @@ def login_cca():
         
         username1 = request.form['uname']
         password1 = request.form['pass']
-        mycursor = mydb.cursor()
+        conn = get_db_connection()
+        mycursor = conn.cursor()
         mycursor.execute("SELECT count(*) FROM nt_cca where uname=%s && pass=%s && status=1",(username1,password1))
         myresult = mycursor.fetchone()[0]
         if myresult>0:
@@ -182,7 +186,8 @@ def login_issuer():
         
         username1 = request.form['uname']
         password1 = request.form['pass']
-        mycursor = mydb.cursor()
+        conn = get_db_connection()
+        mycursor = conn.cursor()
         mycursor.execute("SELECT count(*) FROM nt_issuer where uname=%s && pass=%s && status=1",(username1,password1))
         myresult = mycursor.fetchone()[0]
         if myresult>0:
@@ -591,7 +596,8 @@ def certificatechain(uid,uname,bcdata,utype):
 def register():
     result=""
     act=request.args.get('sid')
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     
  
     now = datetime.datetime.now()
@@ -619,7 +625,7 @@ def register():
 
         
         
-        mycursor = mydb.cursor()
+        mycursor = conn.cursor()
 
         mycursor.execute("SELECT count(*) FROM nt_register where uname=%s",(uname, ))
         cnt = mycursor.fetchone()[0]
@@ -635,7 +641,7 @@ def register():
             val = (maxid, name, mobile, email, address, uname, pass1,pbkey,prkey)
             act="success"
             mycursor.execute(sql, val)
-            mydb.commit()            
+            conn.commit()            
             #print(mycursor.rowcount, "record inserted.")
 
             bcdata="ID: "+str(maxid)+",Certificate Holder :"+name+", User ID:"+uname+",Register Date: "+rdate+""            
@@ -646,7 +652,7 @@ def register():
             result = hashlib.md5(sdata.encode())
             key=result.hexdigest()
 
-            mycursor1 = mydb.cursor()
+            mycursor1 = conn.cursor()
             mycursor1.execute("SELECT max(id)+1 FROM sb_blockchain")
             maxid1 = mycursor1.fetchone()[0]
             if maxid1 is None:
@@ -660,7 +666,7 @@ def register():
             sql2 = "INSERT INTO sb_blockchain(id,block_id,pre_hash,hash_value,sdata) VALUES (%s, %s, %s, %s, %s)"
             val2 = (maxid1,maxid,pkey,key,sdata)
             mycursor1.execute(sql2, val2)
-            mydb.commit()  ''' 
+            conn.commit()  ''' 
             ####
             act="success"
             #return redirect(url_for('index',act=act)) 
@@ -673,7 +679,8 @@ def register():
 def reg():
     result=""
     act=request.args.get('act')
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     
  
     
@@ -690,7 +697,7 @@ def reg():
         
         now = datetime.datetime.now()
         rdate=now.strftime("%d-%m-%Y")
-        mycursor = mydb.cursor()
+        mycursor = conn.cursor()
 
         
         mycursor.execute("SELECT max(id)+1 FROM nt_cca")
@@ -704,7 +711,7 @@ def reg():
         val = (maxid, name, mobile, email, address, uname, pass1)
         act="success"
         mycursor.execute(sql, val)
-        mydb.commit()            
+        conn.commit()            
         print(mycursor.rowcount, "record inserted.")
         
         act="success"
@@ -719,7 +726,8 @@ def reg():
 def reg_issuer():
     result=""
     act=request.args.get('act')
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     
  
     
@@ -736,7 +744,7 @@ def reg_issuer():
         
         now = datetime.datetime.now()
         rdate=now.strftime("%d-%m-%Y")
-        mycursor = mydb.cursor()
+        mycursor = conn.cursor()
 
         
         mycursor.execute("SELECT max(id)+1 FROM nt_issuer")
@@ -750,7 +758,7 @@ def reg_issuer():
         val = (maxid, name, mobile, email, address, uname, pass1)
         act="success"
         mycursor.execute(sql, val)
-        mydb.commit()            
+        conn.commit()            
         print(mycursor.rowcount, "record inserted.")
         
         act="success"
@@ -764,7 +772,8 @@ def reg_issuer():
 def admin():
     result=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     
     act=request.args.get("act") 
    
@@ -774,13 +783,13 @@ def admin():
     if act=="yes":
         rid=request.args.get("rid")
         mycursor.execute("update nt_cca set status=1 where id=%s",(rid,))
-        mydb.commit()
+        conn.commit()
         return redirect(url_for('admin'))
 
     if act=="del":
         did=request.args.get("did")
         mycursor.execute("delete from nt_cca where id=%s",(did,))
-        mydb.commit()
+        conn.commit()
         return redirect(url_for('admin')) 
         
         
@@ -790,7 +799,8 @@ def admin():
 def view_issuer():
     result=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     
     act=request.args.get("act") 
    
@@ -800,13 +810,13 @@ def view_issuer():
     if act=="yes":
         rid=request.args.get("rid")
         mycursor.execute("update nt_issuer set status=1 where id=%s",(rid,))
-        mydb.commit()
+        conn.commit()
         return redirect(url_for('admin'))
 
     if act=="del":
         did=request.args.get("did")
         mycursor.execute("delete from nt_issuer where id=%s",(did,))
-        mydb.commit()
+        conn.commit()
         return redirect(url_for('view_issuer')) 
         
         
@@ -816,7 +826,8 @@ def view_issuer():
 def view_user():
     result=""
     act=request.args.get("act") 
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     
     mycursor.execute("SELECT * FROM nt_register")
     data = mycursor.fetchall()
@@ -824,7 +835,7 @@ def view_user():
     if act=="del":
         did=request.args.get("did")
         mycursor.execute("delete from nt_register where id=%s",(did,))
-        mydb.commit()
+        conn.commit()
         return redirect(url_for('view_user'))
 
     
@@ -846,7 +857,8 @@ def userhome():
     name=""
     message=""
     print(uname)
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_register where uname=%s",(uname, ))
     value = mycursor.fetchone()
     prk=value[7]
@@ -945,7 +957,7 @@ def userhome():
             sql = "INSERT INTO nt_certificate(id,uname,ctype,filename,detail,rdate,canno,ckey) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
             val = (maxid,uname,'',filename,detail,rdate,canno,ckey)
             mycursor.execute(sql,val)
-            mydb.commit()
+            conn.commit()
 
             message="Certificate Owner:"+uname+", UCIC Code:"+canno+", Certificate Key: "+ckey
 
@@ -988,13 +1000,13 @@ def userhome():
     if act=="del":
         did = request.args.get('did')
         mycursor.execute("delete from nt_certificate where id=%s", (did,))
-        mydb.commit()
+        conn.commit()
         return redirect(url_for('userhome'))
 
     if act=="re":
         cid = request.args.get('cid')
         mycursor.execute("update nt_certificate set c_status=0 where id=%s", (cid,))
-        mydb.commit()
+        conn.commit()
         return redirect(url_for('userhome',act='rev'))
     
     
@@ -1018,7 +1030,8 @@ def user_view():
     name=""
     message=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
 
     #mycursor.execute("SELECT * FROM nt_certificate where id=%s",(cid, ))
     #data = mycursor.fetchone()
@@ -1061,7 +1074,8 @@ def user_view2():
     name=""
     message=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
 
     mycursor.execute("SELECT * FROM nt_certificate where id=%s",(cid, ))
     data = mycursor.fetchone()
@@ -1101,7 +1115,8 @@ def user_view3():
     name=""
     message=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
 
     mycursor.execute("SELECT * FROM nt_certificate where id=%s",(cid, ))
     data = mycursor.fetchone()
@@ -1143,7 +1158,8 @@ def send_req2():
     name=""
     message=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
 
     now = datetime.datetime.now()
     rdate=now.strftime("%d-%m-%Y")
@@ -1193,7 +1209,7 @@ def send_req2():
             cnt1 = mycursor.fetchone()[0]
 
             mycursor.execute("update nt_certificate set c_status=1 where canno=%s",(canno,))
-            mydb.commit()
+            conn.commit()
             
 
             
@@ -1229,7 +1245,8 @@ def user_certificate():
         uname = session['username']
     name=""
     print(uname)
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_register where uname=%s",(uname, ))
     value = mycursor.fetchone()
     prk=value[7]
@@ -1283,7 +1300,8 @@ def certificate():
     cid = request.args.get('cid')
 
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
 
     mycursor.execute("SELECT * FROM nt_certificate where id=%s",(cid,))
     data = mycursor.fetchone()
@@ -1317,7 +1335,7 @@ def certificate():
                 result = hashlib.md5(sdata.encode())
                 key=result.hexdigest()
 
-                mycursor1 = mydb.cursor()
+                mycursor1 = conn.cursor()
                 mycursor1.execute("SELECT max(id)+1 FROM nt_blockchain")
                 maxid1 = mycursor1.fetchone()[0]
                 if maxid1 is None:
@@ -1331,7 +1349,7 @@ def certificate():
                 sql2 = "INSERT INTO nt_blockchain(id,block_id,pre_hash,hash_value,sdata) VALUES (%s, %s, %s, %s, %s)"
                 val2 = (maxid1,cid,pkey,key,sdata)
                 mycursor1.execute(sql2, val2)
-                mydb.commit()   
+                conn.commit()   
                 ####
                 
                 #Decrypt
@@ -1363,7 +1381,7 @@ def certificate():
                 result = hashlib.md5(sdata.encode())
                 key=result.hexdigest()
 
-                mycursor1 = mydb.cursor()
+                mycursor1 = conn.cursor()
                 mycursor1.execute("SELECT max(id)+1 FROM nt_blockchain")
                 maxid1 = mycursor1.fetchone()[0]
                 if maxid1 is None:
@@ -1377,7 +1395,7 @@ def certificate():
                 sql2 = "INSERT INTO nt_blockchain(id,block_id,pre_hash,hash_value,sdata) VALUES (%s, %s, %s, %s, %s)"
                 val2 = (maxid1,cid,pkey,key,sdata)
                 mycursor1.execute(sql2, val2)
-                mydb.commit()   
+                conn.commit()   
                 ####
         else:
             act="denied"
@@ -1394,7 +1412,8 @@ def certificate1():
     cid = request.args.get('cid')
 
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
 
     mycursor.execute("SELECT * FROM nt_certificate where id=%s",(cid,))
     data = mycursor.fetchone()
@@ -1418,7 +1437,7 @@ def certificate1():
     if request.method=='POST':
 
         mycursor.execute("update nt_certificate set c_status=0 where id=%s",(cid,))
-        mydb.commit()
+        conn.commit()
         
         key=request.form['key']
         if c_status==1:
@@ -1433,14 +1452,14 @@ def certificate1():
                 kkk3=kkk2[0:8]
 
                 mycursor.execute("update nt_certificate set ckey=%s where id=%s",(kkk3,cid))
-                mydb.commit()
+                conn.commit()
                 
                 ##BC##
                 '''sdata="ID:"+cid+",User:"+name+", KYC Code:"+cno+", RegDate:"+rdate+", Access by "+uname
                 result = hashlib.md5(sdata.encode())
                 key=result.hexdigest()
 
-                mycursor1 = mydb.cursor()
+                mycursor1 = conn.cursor()
                 mycursor1.execute("SELECT max(id)+1 FROM nt_blockchain")
                 maxid1 = mycursor1.fetchone()[0]
                 if maxid1 is None:
@@ -1454,7 +1473,7 @@ def certificate1():
                 sql2 = "INSERT INTO nt_blockchain(id,block_id,pre_hash,hash_value,sdata) VALUES (%s, %s, %s, %s, %s)"
                 val2 = (maxid1,cid,pkey,key,sdata)
                 mycursor1.execute(sql2, val2)
-                mydb.commit()  ''' 
+                conn.commit()  ''' 
                 ####
 
                 
@@ -1500,7 +1519,8 @@ def user_status():
         uname = session['username']
     name=""
     print(uname)
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_register where uname=%s",(uname, ))
     value = mycursor.fetchone()
     prk=value[7]
@@ -1525,7 +1545,8 @@ def user_verify():
         uname = session['username']
     data3=[]
     act=""
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     if request.method=='POST':
         
         cno=request.form['cno']
@@ -1571,7 +1592,8 @@ def user_verify1():
         uname = session['username']
     data3=[]
     act=request.args.get("act")
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
 
     mycursor.execute("SELECT * FROM nt_certificate where id=%s",(cid,))
     data = mycursor.fetchone()
@@ -1668,7 +1690,8 @@ def share():
         uname = session['username']
     data3=[]
 
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_register where uname=%s",(uname, ))
     value = mycursor.fetchone()
     prk=value[7]
@@ -1686,7 +1709,7 @@ def share():
     if request.method=='POST':
 
         mycursor.execute("update nt_certificate set status=1,c_status=1 where id=%s",(fid,))
-        mydb.commit()
+        conn.commit()
         email=request.form['email']
         message="Certificate send by "+uname+", UCIC Code: "+cn+", Key:"+pbkey+", Link:"+link
         #url="http://iotcloud.co.in/testmail/sendmail.php?email="+email+"&message="+message
@@ -1704,7 +1727,8 @@ def add_proof():
     name=""
     cid = request.args.get('cid')
     act = request.args.get('act')
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_register where uname=%s",(uname, ))
     value = mycursor.fetchone()
     name=value[1]
@@ -1778,7 +1802,7 @@ def add_proof():
         sql = "INSERT INTO nt_proof(id,uname,cid,filename,detail,rdate) VALUES (%s, %s, %s, %s, %s, %s)"
         val = (maxid,uname,cid,filename,detail,rdate)
         mycursor.execute(sql,val)
-        mydb.commit()
+        conn.commit()
         
         msg="Upload success"
         return redirect(url_for('add_proof'))
@@ -1789,7 +1813,7 @@ def add_proof():
     if act=="apply":
         print("")
         mycursor.execute("update nt_certificate set status=1 where id=%s", (cid,))
-        mydb.commit()
+        conn.commit()
         
         
 
@@ -1806,7 +1830,8 @@ def home_cca():
         uname = session['username']
     name=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_require where verifier=%s && status=1",(uname,))
     data = mycursor.fetchall()
     
@@ -1823,7 +1848,8 @@ def add_require():
     name=""
     cid = request.args.get('cid')
     act = request.args.get('act')
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     #mycursor.execute("SELECT * FROM nt_register where uname=%s",(uname, ))
     #value = mycursor.fetchone()
     #name=value[1]
@@ -1849,7 +1875,7 @@ def add_require():
         sql = "INSERT INTO nt_require(id,uname,cid,detail,rdate) VALUES (%s, %s, %s, %s, %s)"
         val = (maxid,uname,cid,detail,rdate)
         mycursor.execute(sql,val)
-        mydb.commit()
+        conn.commit()
         
         msg="Upload success"
         return redirect(url_for('add_require',cid=cid,act=act))
@@ -1867,7 +1893,8 @@ def send_req():
         uname = session['username']
     name=""
     act=request.args.get('act')
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     
 
     now = datetime.datetime.now()
@@ -1895,7 +1922,8 @@ def send_req1():
     name=""
     act=request.args.get('act')
     userid=request.args.get('userid')
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_certificate where uname=%s",(userid,))
     udata = mycursor.fetchall()
 
@@ -1927,7 +1955,7 @@ def send_req1():
         sql = "INSERT INTO nt_require(id,uname,cid,detail,rdate,verifier,cno,ckey) VALUES (%s, %s, %s, %s, %s, %s,%s,%s)"
         val = (maxid,userid,cid,detail,rdate,uname,cno,ckey)
         mycursor.execute(sql,val)
-        mydb.commit()
+        conn.commit()
         act="1"
         msg="success"
         return redirect(url_for('send_req1',act=act,userid=userid))
@@ -1946,7 +1974,8 @@ def sharereq():
         uname = session['username']
     name=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_certificate where uname=%s",(uname,))
     cdata = mycursor.fetchall()
     
@@ -1956,9 +1985,9 @@ def sharereq():
     prk=value[7]
     pbkey=value[8]
     mycursor.execute("update nt_certificate set c_status=1 where id=%s",(cid,))
-    mydb.commit()
+    conn.commit()
     mycursor.execute("update nt_require set status=1 where id=%s",(rid,))
-    mydb.commit()
+    conn.commit()
     act='1'
     '''if request.method=='POST':
         
@@ -1970,10 +1999,10 @@ def sharereq():
         ckey=cdd[12]
 
         mycursor.execute("update nt_certificate set c_status=1 where id=%s",(cid,))
-        mydb.commit()
+        conn.commit()
 
         mycursor.execute("update nt_require set cid=%s,cno=%s,ckey=%s,status=1 where id=%s",(cid,cno,pbkey,rid))
-        mydb.commit()
+        conn.commit()
         return redirect(url_for('sharereq',act='1'))'''
         
     
@@ -1988,7 +2017,8 @@ def view_req():
         uname = session['username']
     name=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_require where uname=%s order by id desc",(uname,))
     data = mycursor.fetchall()
     
@@ -2005,7 +2035,8 @@ def verify_cca():
     name=""
     cid = request.args.get('cid')
     act = request.args.get('act')
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     
     mycursor.execute("SELECT * FROM nt_certificate where id=%s && status=0",(cid,))
     data = mycursor.fetchone()
@@ -2024,7 +2055,7 @@ def verify_cca():
     
     if act=="transfer":
         mycursor.execute("update nt_certificate set status=2,transfer_cca=%s where id=%s", (rdate,cid))
-        mydb.commit()
+        conn.commit()
 
         ################
         
@@ -2081,7 +2112,7 @@ def verify_cca():
         result = hashlib.md5(sdata.encode())
         key=result.hexdigest()
 
-        mycursor1 = mydb.cursor()
+        mycursor1 = conn.cursor()
         mycursor1.execute("SELECT max(id)+1 FROM nt_blockchain")
         maxid1 = mycursor1.fetchone()[0]
         if maxid1 is None:
@@ -2095,18 +2126,18 @@ def verify_cca():
         sql2 = "INSERT INTO nt_blockchain(id,block_id,pre_hash,hash_value,sdata) VALUES (%s, %s, %s, %s, %s)"
         val2 = (maxid1,cid,pkey,key,sdata)
         mycursor1.execute(sql2, val2)
-        mydb.commit()   
+        conn.commit()   
         ####
         return redirect(url_for('transfer_cca'))
     elif act=="reject":
         mycursor.execute("update nt_certificate set status=3,transfer_cca=%s where id=%s", (rdate,cid))
-        mydb.commit()
+        conn.commit()
         ##BC##
         sdata="ID:"+cid+", Verifier:"+uname+", Rejected, RegDate:"+rdate
         result = hashlib.md5(sdata.encode())
         key=result.hexdigest()
 
-        mycursor1 = mydb.cursor()
+        mycursor1 = conn.cursor()
         mycursor1.execute("SELECT max(id)+1 FROM nt_blockchain")
         maxid1 = mycursor1.fetchone()[0]
         if maxid1 is None:
@@ -2120,7 +2151,7 @@ def verify_cca():
         sql2 = "INSERT INTO nt_blockchain(id,block_id,pre_hash,hash_value,sdata) VALUES (%s, %s, %s, %s, %s)"
         val2 = (maxid1,cid,pkey,key,sdata)
         mycursor1.execute(sql2, val2)
-        mydb.commit()   
+        conn.commit()   
         ####
         return redirect(url_for('transfer_cca'))
     
@@ -2137,7 +2168,8 @@ def approve_cca():
         uname = session['username']
     name=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_certificate where status=2")
     data = mycursor.fetchall()
     
@@ -2153,7 +2185,8 @@ def cca_verify():
         uname = session['username']
     name=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_certificate where status=1")
     data = mycursor.fetchall()
     
@@ -2168,7 +2201,8 @@ def verify():
     msg=""
     data3=[]
     act=""
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     if request.method=='POST':
         
         cno=request.form['cno']
@@ -2215,7 +2249,8 @@ def issuer_home():
     name=""
     print(uname)
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_issuer where uname=%s",(uname, ))
     value = mycursor.fetchone()
 
@@ -2328,7 +2363,7 @@ def issuer_home():
             sql2 = "INSERT INTO nt_certificate_issued(id,kyc_code,filename,description,hash_value,face_status,text_value,name,email,issue_date,uname) VALUES (%s, %s, %s, %s, %s,%s,%s,%s,%s,%s,%s)"
             val2 = (maxid,kcode,fnn,detail,hashval,fst1,v11,'','',rdate,uname)
             mycursor.execute(sql2, val2)
-            mydb.commit()   
+            conn.commit()   
             msg="success"
         else:
             msg="fail"
@@ -2352,7 +2387,8 @@ def issuer_view():
     name=""
     print(uname)
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_issuer where uname=%s",(uname, ))
     value = mycursor.fetchone()
 
@@ -2374,7 +2410,8 @@ def issuer_send():
         uname = session['username']
     name=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_issuer where uname=%s",(uname, ))
     value = mycursor.fetchone()
     if request.method=='POST':
@@ -2383,7 +2420,7 @@ def issuer_send():
         email=request.form['email']
 
         mycursor.execute("update nt_certificate_issued set name=%s,email=%s where id=%s",(name,email,cid))
-        mydb.commit()
+        conn.commit()
 
         mycursor.execute("SELECT * FROM nt_certificate_issued where id=%s",(cid, ))
         dat = mycursor.fetchone()
@@ -2421,7 +2458,8 @@ def issuer_certificate():
         uname = session['username']
     name=""
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM nt_issuer where uname=%s",(uname, ))
     value = mycursor.fetchone()
 
@@ -2436,7 +2474,8 @@ def view_block():
     msg=""
     sid = request.args.get('sid')
     
-    mycursor = mydb.cursor()
+    conn = get_db_connection()
+    mycursor = conn.cursor()
     mycursor.execute("SELECT * FROM sb_blockchain where block_id=%s",(sid, ))
     data = mycursor.fetchall()
        

@@ -45,12 +45,16 @@ import mysql.connector
 from Crypto import Random
 from Crypto.Cipher import AES
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 mydb = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  passwd="",
+  host=os.getenv('DB_HOST', 'mysql.railway.internal'),
+  user=os.getenv('DB_USER', 'root'),
+  passwd=os.getenv('DB_PASSWORD', ''),
   charset="utf8",
-  database="certificate_locker_new"
+  database=os.getenv('DB_NAME', 'railway')
 )
 
 
